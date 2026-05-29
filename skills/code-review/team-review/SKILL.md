@@ -36,19 +36,19 @@ Create one ephemeral team with three category-backed reviewers. Use `team_create
         "name": "code-quality-reviewer",
         "kind": "category",
         "category": "unspecified-high",
-        "prompt": "Review the requested scope for consistency with existing code, maintainability, type safety, project conventions, correct patterns, best practices, unnecessary complexity, and regression risk. Report only actionable findings with file paths and line numbers when available. Scope: {scope}"
+        "prompt": "Review the requested scope for consistency with existing code, maintainability, correctness, type/interface safety where applicable, project conventions, unnecessary complexity, and regression risk. Report only actionable findings with file paths and line numbers when available. Scope: {scope}"
       },
       {
         "name": "performance-reviewer",
         "kind": "category",
         "category": "unspecified-high",
-        "prompt": "Review the requested scope for performance risks: avoidable queries, N+1 behavior, inefficient loops, unnecessary allocations, blocking I/O, missing indexes, over-fetching, cache misuse, and high-concurrency bottlenecks. Report only actionable findings with file paths and line numbers when available. Scope: {scope}"
+        "prompt": "Review the requested scope for performance risks: avoidable expensive operations, repeated data access, inefficient loops, unnecessary allocations, blocking I/O, over-fetching, cache misuse, missing indexes when data storage is in scope, and high-concurrency bottlenecks. Report only actionable findings with file paths and line numbers when available. Scope: {scope}"
       },
       {
         "name": "security-reviewer",
         "kind": "category",
         "category": "unspecified-high",
-        "prompt": "Review the requested scope for security risks: missing authentication, missing authorization, RBAC mistakes, data leaks, unsafe serialization, mass assignment, injection, secret exposure, weak validation, and privilege escalation. Report only actionable findings with file paths and line numbers when available. Scope: {scope}"
+        "prompt": "Review the requested scope for security risks: missing authentication or authorization, access-control mistakes, data leaks, unsafe serialization or output encoding, unsafe object binding, injection, secret exposure, weak validation at trust boundaries, and privilege escalation. Report only actionable findings with file paths and line numbers when available. Scope: {scope}"
       }
     ]
   }
@@ -65,7 +65,7 @@ After `team_create` returns a `teamRunId`, create one task per reviewer. Each ta
 {
   "teamRunId": "{teamRunId}",
   "subject": "Code quality review",
-  "description": "Review {scope} for code quality, project conventions, maintainability, type safety, correct patterns, and regression risk. Return findings ordered by severity with file path, line, impact, and suggested fix. If no findings, say so and list residual risks."
+  "description": "Review {scope} for code quality, project conventions, maintainability, correctness, type/interface safety where applicable, and regression risk. Return findings ordered by severity with file path, line, impact, and suggested fix. If no findings, say so and list residual risks."
 }
 ```
 
@@ -91,23 +91,25 @@ Then use `team_send_message` to broadcast the scope and review rules:
 ### Code quality reviewer
 
 - Check consistency with nearby code and project skills.
-- Check type safety, PHPDoc precision, naming, imports, and error handling.
-- Flag speculative abstractions, duplicated domain logic, and incorrect framework assumptions.
-- Verify controllers, actions, repositories, providers, and schemas follow existing project patterns.
+- Check type/interface safety, contract accuracy, naming, imports or dependencies, and error handling.
+- Flag speculative abstractions, duplicated domain logic, and incorrect platform or framework assumptions.
+- Verify touched components, entry points, data models, services, and configuration follow existing project patterns.
+- Check that public APIs, CLI commands, UI flows, background jobs, or integration points preserve documented behavior when they are in scope.
 
 ### Performance reviewer
 
-- Check database query count and N+1 risks.
-- Check loops, collections, pagination, eager loading, and over-fetching.
-- Check blocking I/O or expensive work on hot request paths.
-- Check missing or inappropriate indexes when schema changes are in scope.
+- Check repeated data access, N+1-style behavior, and avoidable expensive operations.
+- Check loops, batching, pagination, streaming, caching, and over-fetching.
+- Check blocking I/O or expensive work on latency-sensitive or high-throughput paths.
+- Check missing or inappropriate indexes, cache keys, resource limits, or concurrency controls when relevant to the scope.
 
 ### Security reviewer
 
 - Check authentication and authorization gates before data access or mutation.
-- Check RBAC `PermissionEnum` usage and policy registration.
-- Check data exposure in JSON:API schemas, errors, logs, and serialized responses.
-- Check validation at external boundaries and injection risks.
+- Check role, permission, ownership, tenant, or policy checks using the project's existing access-control model.
+- Check data exposure in APIs, UI output, errors, logs, serialized responses, artifacts, and exported files.
+- Check validation and normalization at external boundaries and injection risks across queries, commands, templates, redirects, and generated content.
+- Check secret handling, credential storage, dependency risk, and unsafe deserialization or object binding when they are in scope.
 
 ## Synthesize results
 
